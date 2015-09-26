@@ -6,11 +6,11 @@ var connect = _.once(function(connectionString) {
   return clientConnected = new Promise(function(resolve, reject) {
       pg.connect(connectionString, function(err, client, done) {
       if(err) {
-        console.error('error unable to connect to database:', err)
+        console.error('Error unable to connect to database:', err)
         reject(err);
       }
       else {
-        console.info('database connected');
+        console.info('Database connected');
         resolve(client);
       }
     });
