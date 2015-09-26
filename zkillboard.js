@@ -4,7 +4,6 @@ var apiParams = require('./zkillboardParams');
 var _ = require('lodash');
 var fetch = require('node-fetch');
 
-var THROTTLE_DURATION = 5 * 60 * 1000;
 var FETCH_DELAY = 100;
 
 // functions to analyse losses
@@ -61,11 +60,11 @@ var fetchLosses = function() {
   .then(concatArrays);
 };
 
-module.exports =  _.throttle(function() {
+module.exports =  (function() {
   return Promise.resolve()
   .then(fetchLosses)
   .then(computeLossesForIndustry);
-}, THROTTLE_DURATION);
+});
 
 function logger(log) {console.log(log);}
 function errorlog(log) {consor.error("error");}

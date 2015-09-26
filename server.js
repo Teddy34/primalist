@@ -1,16 +1,11 @@
-var pg = require('pg');
 var fetch = require('node-fetch');
-var connectionString = process.env.DB_CONNECTION_STRING || require('./databaseCredentials');
 var _ = require('lodash');
 var template = require('./UITable');
 
-var THROTTLE_DURATION = 5 * 60 * 1000;
+var eveSDE = require('./io/eveSDE');
+eveSDE.connect(process.env.DB_CONNECTION_STRING || require('./databaseCredentials'));
 
-pg.connect(connectionString, function(err, client, done) {
-  if(err) {
-    return console.error('error fetching client from pool', err);
-  }
-  var evedb = require('./eveDB')(client); // pass db into evedb closure
+var THROTTLE_DURATION = 5 * 60 * 1000;
 
 
 var mergeToOneObject = function(list) {
@@ -28,16 +23,13 @@ var filterEveOnly = function(elem) {
 };
 
 var decorateFromSDE = function(itemList) {
-  return new Promise( function(resolve,reject) {
-    evedb.getItems(function(err,items){
-      if(!err){
-       resolve(_(items.rows).zip(itemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnly).sortBy('groupID').value());
-      }
-      else {
-       reject(err);
-      }
-    }, itemList);
-  });
+
+  function parse(eveSDEItems) {
+    return _(eveSDEItems.rows).zip(itemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnly).sortBy('groupID').value();
+  }
+
+  return eveSDE.getItems(itemList)
+  .then(parse);
 };
 
 var getRenderedTemplate = function(data) {
@@ -75,8 +67,7 @@ function getJSON(response) {
   return response.json();
 }
 
-function log(toLog) {
-  console.log(toLog);
+function log(result) {
+  console.log(result);
+  return result;
 }
-
-});
