@@ -6,6 +6,10 @@ var fetchZKillboard = require('../io/fetchZKillboard')
 
 // functions to analyse losses
 
+var filterDust = function(loss) {
+  return (-1 === [351210, 351064].indexOf(loss.groupID));
+}
+
 var reduceLoss = function(memo, loss) {
   //add items
   memo =  _(loss.items).reduce(reduceLostItem,memo);

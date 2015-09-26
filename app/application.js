@@ -21,7 +21,14 @@ var filterEveOnly = function(elem) {
 var decorateFromSDE = function(itemList) {
 
   function parse(eveSDEItems) {
-    return _(eveSDEItems.rows).zip(itemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnly).sortBy('groupID').value();
+    var myItemIDs = _.pluck(itemList, 'typeID');
+    var sdeItemIDs = _.pluck(eveSDEItems.rows, 'typeID');
+    var difference = _.difference(myItemIDs,sdeItemIDs); // list not found items
+    var myFilteredItemList = _.filter(itemList, function(item) {
+      return (difference.indexOf(item.typeID) === -1);
+    });
+
+    return _(eveSDEItems.rows).zip(myFilteredItemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnly).sortBy('groupID').value();
   }
 
   return eveSDE.getItems(itemList)
@@ -39,4 +46,14 @@ module.exports = {
 	  .then(decorateFromSDE)
 	  .then(getRenderedTemplate);
 	}
+}
+
+function logger(result) {
+  console.log(result.rows.length);
+  return result;
+}
+
+function logError(error) {
+  console.error("error app");
+  return promise.reject(error);
 }

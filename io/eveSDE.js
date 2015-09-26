@@ -6,7 +6,7 @@ var connect = function(connectionString) {
 }
 
 var getItems = function(itemList) {
-  return dbConnector.sendQueryWhenReady('SELECT t."typeName", t."groupID" FROM "invTypes" AS "t" WHERE "typeID" IN (' +
+  return dbConnector.sendQueryWhenReady('SELECT t."typeID", t."typeName", t."groupID" FROM "invTypes" AS "t" WHERE "typeID" IN (' +
                   _.map(itemList, function(elem) {return elem.typeID;}).toString() +
                   ') ORDER BY "typeID"');
 };

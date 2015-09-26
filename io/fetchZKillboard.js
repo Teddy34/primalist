@@ -7,8 +7,10 @@ module.exports = function get(urls) {
   var options = {
     method: 'get',
     headers:{
-        "Accept": "application/json",
-        "Content-Type": "application/json"
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'application/json',
+        'User-Agent': process.env.USER_AGENT || 'unknown'
       }
   };
 
