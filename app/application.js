@@ -45,15 +45,22 @@ module.exports = {
 	  .then(parseZKillboard)
 	  .then(decorateFromSDE)
 	  .then(getRenderedTemplate);
-	}
+	},
+
+  serveAPI: function() {
+
+    return Promise.resolve()
+    .then(parseZKillboard)
+    .then(decorateFromSDE)
+  }
 }
 
 function logger(result) {
-  console.log(result.rows.length);
+  console.log(result);
   return result;
 }
 
 function logError(error) {
-  console.error("error app");
+  console.error("error app:", error);
   return promise.reject(error);
 }

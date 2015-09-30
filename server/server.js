@@ -11,6 +11,17 @@ var webServer;
 var initServer = function(input) {
   // create the webserver
   webServer = express();
+
+  webServer.use('/api/', function(req,res) {
+    Promise.resolve()
+    .then(_.throttle(application.serveAPI,THROTTLE_DURATION))
+    .then(function(response) {
+      res.send(response);
+    })
+    .catch(function(error) {
+      res.send({error:error});
+    });
+  });
   webServer.use('/', function(req,res) {
     Promise.resolve()
     .then(_.throttle(application.serveHTML,THROTTLE_DURATION))
@@ -22,12 +33,12 @@ var initServer = function(input) {
     });
   });
   return input;
-}
+};
 
 var startServer = function(port) {
   console.log("Listening to port", port);
   webServer.listen(port);
-}
+};
 
 // START THE SERVER
 // =============================================================================
@@ -38,3 +49,13 @@ module.exports = {
       .then(startServer);
   }
 } 
+
+function logger(result) {
+  console.log(result);
+  return result;
+}
+
+function logError(error) {
+  console.error("error server:", error);
+  return promise.reject(error);
+}

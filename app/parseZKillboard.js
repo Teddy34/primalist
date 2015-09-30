@@ -38,7 +38,6 @@ var computeLossesForIndustry = function(losses) {
 // function to get losses
 
 var fetchLosses = function() {
-
   var baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
 
   var addFilter = function(value, filterKey) {
@@ -56,9 +55,9 @@ module.exports =  (function() {
   .then(computeLossesForIndustry);
 });
 
-function logger(log) {console.log(log);}
-function errorlog(log) {consor.error("error");}
+function logger(log) {console.log(log); return log;}
+function errorlog(log) {consor.error("error"); return Promise.reject(log);}
 
 var reduceURLoptions = function(memo, value, key) {
   return memo + '/' + key + '/' + value;
-}
+};
