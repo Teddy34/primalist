@@ -14,8 +14,9 @@ var forceTypeNumber = function(elem) {
   return elem;
 };
 
-var filterEveOnly = function(elem) {
- return (elem.groupID < 100000);
+var filterEveOnlyAndMarket = function(elem) {
+  //return (elem.groupID < 100000);
+  return ((elem.groupID < 100000) && (elem.marketGroupID !== null));
 };
 
 var decorateFromSDE = function(itemList) {
@@ -28,7 +29,7 @@ var decorateFromSDE = function(itemList) {
       return (difference.indexOf(item.typeID) === -1);
     });
 
-    return _(eveSDEItems.rows).zip(myFilteredItemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnly).sortBy('groupID').value();
+    return _(eveSDEItems.rows).zip(myFilteredItemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnlyAndMarket).sortBy('groupID').value();
   }
 
   return eveSDE.getItems(itemList)

@@ -29,6 +29,7 @@ var initServer = function(input) {
       res.send(response);
     })
     .catch(function(error) {
+      if (error && error.stack) {console.log(error.stack)};
       res.send({error:error});
     });
   });
