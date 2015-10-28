@@ -42,19 +42,19 @@ var getRenderedTemplate = function(data) {
 
 module.exports = {
 	serveHTML : function() {
-	  return Promise.resolve()
-	  .then(parseZKillboard)
-	  .then(decorateFromSDE)
-	  .then(getRenderedTemplate);
+    return Promise.resolve()
+    .then(parseZKillboard)
+    .then(decorateFromSDE)
+    .then(getRenderedTemplate);
 	},
 
   serveAPI: function() {
 
     return Promise.resolve()
     .then(parseZKillboard)
-    .then(decorateFromSDE)
+    .then(decorateFromSDE);
   }
-}
+};
 
 function logger(result) {
   console.log(result);

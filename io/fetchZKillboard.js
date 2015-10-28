@@ -1,6 +1,8 @@
 var _ = require('lodash');
 var fetch = require('node-fetch');
 
+var parameters = require('../parameters');
+
 // function to get losses
 
 module.exports = function get(urls) {
@@ -10,7 +12,7 @@ module.exports = function get(urls) {
         'Accept': 'application/json',
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json',
-        'User-Agent': process.env.USER_AGENT || 'unknown'
+        'User-Agent': parameters.USER_AGENT
       }
   };
 

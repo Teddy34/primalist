@@ -1,11 +1,13 @@
+var parameters = require('./parameters');
+
 function connectDB() {
 	console.info("Database connecting");
-	return require('./io/eveSDE').connect(process.env.DB_CONNECTION_STRING || require('./databaseCredentials'));
+	return require('./io/eveSDE').connect(parameters.DB_CONNECTION_STRING);
 }
 
 function startWebServer() {
 	console.info("WebServer starting");
-	return require('./server/server').start(process.env.PORT || 8080);
+	return require('./server/server').start(parameters.PORT || 8080);
 }
 
 function logServiceStarting(result) {

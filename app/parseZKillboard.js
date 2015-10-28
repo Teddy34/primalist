@@ -1,14 +1,14 @@
 var _ = require('lodash');
 var fetch = require('node-fetch');
 
-var apiParams = require('../zkillboardParams');
-var fetchZKillboard = require('../io/fetchZKillboard')
+var apiParams = require('../parameters').ZKILLBOARD_PARAMS;
+var fetchZKillboard = require('../io/fetchZKillboard');
 
 // functions to analyse losses
 
 var filterDust = function(loss) {
   return (-1 === [351210, 351064].indexOf(loss.groupID));
-}
+};
 
 var reduceLoss = function(memo, loss) {
   //add items
