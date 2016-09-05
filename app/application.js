@@ -2,7 +2,7 @@ var _ = require('lodash');
 
 var template = require('./UITable');
 var parseZKillboard = require('./parseZKillboard');
-var eveSDE = require('../io/swaggerConnector');
+var eveSDE = require('../io/eveSDE');
 
 var mergeToOneObject = function(list) {
  return _.reduce(list, function(memo,value) {return _.extend(memo,value);});
@@ -20,14 +20,15 @@ var filterEveOnlyAndMarket = function(elem) {
 };
 
 var decorateFromSDE = function(itemList) {
-
   function parse(eveSDEItems) {
     var myItemIDs = _.pluck(itemList, 'typeID');
-    var sdeItemIDs = _.pluck(eveSDEItems.rows, 'typeID');
+    var sdeItemIDs = _.pluck(eveSDEItems.rows, 'typeID').map((nId) => String(nId));
     var difference = _.difference(myItemIDs,sdeItemIDs); // list not found items
+
     var myFilteredItemList = _.filter(itemList, function(item) {
       return (difference.indexOf(item.typeID) === -1);
     });
+
 
     return _(eveSDEItems.rows).zip(myFilteredItemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnlyAndMarket).sortBy('groupID').value();
   }

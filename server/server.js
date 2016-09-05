@@ -11,7 +11,7 @@ var initServer = function(input) {
   // create the webserver
   webServer = express();
 
-  webServer.use('/api/', function(req,res) {
+  webServer.get('/api/', function(req,res) {
     Promise.resolve()
     .then(_.throttle(application.serveAPI,parameters.THROTTLE_DURATION))
     .then(function(response) {
@@ -21,7 +21,7 @@ var initServer = function(input) {
       res.send({error:(error && error.stack) ?error.stack : error});
     });
   });
-  webServer.use('/', function(req,res) {
+  webServer.get('/', function(req,res) {
     Promise.resolve()
     .then(_.throttle(application.serveHTML,parameters.THROTTLE_DURATION))
     .then(function(response) {
