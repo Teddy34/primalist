@@ -1,3 +1,5 @@
+'use strict';
+
 var _ = require('lodash');
 var fetch = require('node-fetch');
 
@@ -32,24 +34,13 @@ var convertToObject = function(value, key) {
 };
 
 var computeLossesForIndustry = function(losses) {
+  console.log('computeLossesForIndustry', losses.length);
   return _.map(_.reduce(losses, reduceLoss, {}), convertToObject);
 };
 
 // function to get losses
 
-var fetchLosses = function() {
-  const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
-
-  const extractentity = function(value, filterKey) {
-    return _.map(value, function(filterValue) {
-      return {type:filterKey, id: filterValue};
-    });
-  };
-
-  return fetchZKillboard(_(apiParams.filters).map(addFilter).flatten().value());
-};
-
-fetchLossesForOneEntity = (entity) => {
+var fetchLossesForOneEntity = (entity) => {
   const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url) +
     '/' + entity.type + '/' + entity.id;
   let oldestKill;
@@ -61,18 +52,32 @@ fetchLossesForOneEntity = (entity) => {
         .then(fetchNext);
     }
 
-    if (partialResult.length >= 0) {
-      // 
+    if (partialResult.length > 0) {
+      //
       aggregateResult = aggregateResult.concat(partialResult);
       return fetchZKillboard(baseUrl+ '/beforeKillID/' + _.last(partialResult).killID)
         .then(fetchNext);
     }
 
+  console.log("result final", aggregateResult.length); 
     // no more things to request, end of loop
     return aggregateResult;
 
   };
 
+  return fetchNext();
+};
+
+var fetchLosses = function() {
+  const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
+
+  const extractEntity = function(value, filterKey) {
+    return _.map(value, function(filterValue) {
+      return {type:filterKey, id: filterValue};
+    });
+  };
+
+  return fetchLossesForOneEntity(_(apiParams.filters).map(extractEntity).flatten().head());
 };
 
 module.exports =  (function() {

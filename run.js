@@ -2,7 +2,7 @@ var parameters = require('./parameters');
 
 function connectDB() {
 	console.info("Database connecting");
-	return require('./io/eveSDE').connect(parameters.DB_CONNECTION_STRING);
+	return require('./io/swaggerConnector').connect(parameters.DB_CONNECTION_STRING);
 }
 
 function startWebServer() {

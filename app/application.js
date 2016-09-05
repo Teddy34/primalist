@@ -2,7 +2,7 @@ var _ = require('lodash');
 
 var template = require('./UITable');
 var parseZKillboard = require('./parseZKillboard');
-var eveSDE = require('../io/eveSDE');
+var eveSDE = require('../io/swaggerConnector');
 
 var mergeToOneObject = function(list) {
  return _.reduce(list, function(memo,value) {return _.extend(memo,value);});
@@ -44,6 +44,7 @@ module.exports = {
 	serveHTML : function() {
     return Promise.resolve()
     .then(parseZKillboard)
+    .then((result) => {console.log(result.length); return result})
     .then(decorateFromSDE)
     .then(getRenderedTemplate);
 	},
