@@ -38,15 +38,41 @@ var computeLossesForIndustry = function(losses) {
 // function to get losses
 
 var fetchLosses = function() {
-  var baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
+  const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
 
-  var addFilter = function(value, filterKey) {
+  const extractentity = function(value, filterKey) {
     return _.map(value, function(filterValue) {
-      return baseUrl + '/' + filterKey + '/' + filterValue;
+      return {type:filterKey, id: filterValue};
     });
   };
 
   return fetchZKillboard(_(apiParams.filters).map(addFilter).flatten().value());
+};
+
+fetchLossesForOneEntity = (entity) => {
+  const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url) +
+    '/' + entity.type + '/' + entity.id;
+  let oldestKill;
+  let aggregateResult = [];
+
+  const fetchNext = (partialResult) => {
+    if (partialResult === undefined) {
+      return fetchZKillboard(baseUrl)
+        .then(fetchNext);
+    }
+
+    if (partialResult.length >= 0) {
+      // 
+      aggregateResult = aggregateResult.concat(partialResult);
+      return fetchZKillboard(baseUrl+ '/beforeKillID/' + _.last(partialResult).killID)
+        .then(fetchNext);
+    }
+
+    // no more things to request, end of loop
+    return aggregateResult;
+
+  };
+
 };
 
 module.exports =  (function() {

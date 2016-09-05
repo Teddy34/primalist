@@ -5,7 +5,7 @@ var parameters = require('../parameters');
 
 // function to get losses
 
-module.exports = function get(urls) {
+module.exports = function get(url) {
   var options = {
     method: 'get',
     headers:{
@@ -16,22 +16,11 @@ module.exports = function get(urls) {
       }
   };
 
-  var doFetch = function(url, options) {
-    return fetch(url, options).then(getJSON);
-  };
-
-  return Promise.all(_.map(urls, doFetch))
-  .then(concatArrays)
+  return fetch(url, options).then(getJSON);
 };
 
 function getJSON(response) {
   return response.json();
-}
-
-function concatArrays(results) {
-  return _.reduce(results, function(memo, result) {
-    return memo.concat(result);
-  }, []);
 }
 
 function log(result) {
