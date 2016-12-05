@@ -1,43 +1,47 @@
 const {
   flow,
-  partial,
   map,
   difference,
   filter,
   zip,
   toNumber,
-  sortBy
+  property,
+  tap
 } = require('lodash/fp');
 
 const template = require('./UITable');
 const parseZKillboard = require('./parseZKillboard');
 const {getItems} = require('../io/eveSDE');
 
-const mergeToOneObject = (arr) => Object.assign({}, ...arr)
+const mergeToOneObject = (arr) => Object.assign({}, ...arr);
 
-const forceTypeNumber = (elem) => {
-  elem.groupID = toNumber(elem.groupID);
-  elem.typeID = toNumber(elem.typeID);
-  return elem;
-};
+const forceTypeNumber = (elem) => Object.assign(
+  {},
+  elem,
+  {
+    groupID: toNumber(elem.groupID),
+    typeID: toNumber(elem.typeID)
+  }
+);
 
-const filterEveOnlyAndMarket = (elem) => {
-  return ((elem.groupID < 100000) && (elem.marketGroupID !== null));
-};
+const filterIsOnMarket = elem => (elem.marketGroupID !== null)
+const getItemIds = map(flow(property('typeID'), (nId) => String(nId)));
 
 const decorateFromSDE = (itemList) => {
-  const parse = (eveSDEItems) => {
-    const myItemIDs = map('typeID', itemList);
-    const sdeItemIDs = map('typeID', eveSDEItems.rows).map((nId) => String(nId));
+  const parse = ({rows: eveSDEItems}) => {
+    const myItemIDs = getItemIds(itemList);
+    const sdeItemIDs = getItemIds(eveSDEItems);
+
+    const merge = flow(mergeToOneObject, forceTypeNumber);
+
     const diff = difference(myItemIDs, sdeItemIDs); // list not found items
-    const myFilteredItemList = filter((item) => (diff.indexOf(item.typeID) === -1), itemList);
+    const myFilteredItemList = filter(item => (diff.indexOf(item.typeID) === -1), itemList);
 
     return flow(
       zip(myFilteredItemList),
-      map(mergeToOneObject),
-      map(forceTypeNumber),
-      filter(filterEveOnlyAndMarket)
-      )(eveSDEItems.rows);
+      map(flow(mergeToOneObject, forceTypeNumber)),
+      filter(filterIsOnMarket)
+      )(eveSDEItems);
   }
 
   return Promise.resolve(itemList)
@@ -45,25 +49,15 @@ const decorateFromSDE = (itemList) => {
     .then(parse);
 };
 
-const getRenderedTemplate = (data) => template({items:data})
-
-const logger = (result) => {
-  console.log(result);
-  return result;
-}
-
-const logError = (error) => {
-  console.error("error app:", error);
-  return promise.reject(error);
-}
+const getRenderedTemplate = data => template({items:data})
 
 module.exports = {
 	serveHTML : () => {
     return Promise.resolve()
     .then(parseZKillboard)
-    .then((result) => {console.log(result.length); return result})
+    .then(tap(result => console.log(result.length)))
     .then(decorateFromSDE)
-    .then(getRenderedTemplate);
+    .then(getRenderedTemplate)
 	},
 
   serveAPI: () => {
