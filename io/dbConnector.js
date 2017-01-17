@@ -6,7 +6,7 @@ const connect = _.once((connectionString) => {
   return clientConnected = new Promise((resolve, reject) => {
       pg.connect(connectionString, (err, client, done) => {
       if(err) {
-        console.error('Error unable to connect to database:', err)
+        console.error('Error unable to connect to database:', err);
         reject(err);
       }
       else {

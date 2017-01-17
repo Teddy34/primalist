@@ -9,6 +9,8 @@ const {
   tap
 } = require('lodash/fp');
 
+const log = (text) => tap(() => console.log(text));
+
 const template = require('./UITable');
 const parseZKillboard = require('./parseZKillboard');
 const {getItems} = require('../io/eveSDE');
@@ -24,46 +26,46 @@ const forceTypeNumber = (elem) => Object.assign(
   }
 );
 
+const mergeAndFormat = flow(mergeToOneObject, forceTypeNumber);
+
 const filterIsOnMarket = elem => (elem.marketGroupID !== null)
 const getItemIds = map(flow(property('typeID'), (nId) => String(nId)));
 
 const decorateFromSDE = (itemList) => {
-  const parse = ({rows: eveSDEItems}) => {
+  const parse = (eveSDEItems) => {
     const myItemIDs = getItemIds(itemList);
     const sdeItemIDs = getItemIds(eveSDEItems);
-
-    const merge = flow(mergeToOneObject, forceTypeNumber);
 
     const diff = difference(myItemIDs, sdeItemIDs); // list not found items
     const myFilteredItemList = filter(item => (diff.indexOf(item.typeID) === -1), itemList);
 
     return flow(
       zip(myFilteredItemList),
-      map(flow(mergeToOneObject, forceTypeNumber)),
+      map(mergeAndFormat),
       filter(filterIsOnMarket)
       )(eveSDEItems);
   }
 
   return Promise.resolve(itemList)
+  .then(log('getting items'))
     .then(getItems)
-    .then(parse);
+    .then(log('item got'))
+    .then(property('rows'))
+    .then(parse)
+    .then(log('parsed'));
 };
 
 const getRenderedTemplate = data => template({items:data})
 
 module.exports = {
-	serveHTML : () => {
-    return Promise.resolve()
+	serveHTML : () => Promise.resolve()
     .then(parseZKillboard)
     .then(tap(result => console.log(result.length)))
     .then(decorateFromSDE)
     .then(getRenderedTemplate)
-	},
+  ,
 
-  serveAPI: () => {
-
-    return Promise.resolve()
+  serveAPI: () => Promise.resolve()
     .then(parseZKillboard)
-    .then(decorateFromSDE);
-  }
+    .then(decorateFromSDE)
 };

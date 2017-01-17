@@ -17,10 +17,12 @@ const initServer = (input) => {
     Promise.resolve()
     .then(promisedServeAPI)
     .then((response) => {
+      console.log('success');
       res.send(response);
     })
     .catch((error) => {
-      res.send({error:(error && error.stack) ?error.stack : error});
+      console.log('error:', error);
+      res.send({error:(error && error.stack) ?error.stack : 'error' + error});
     });
   });
   webServer.get('/', (req,res) => {

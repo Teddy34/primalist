@@ -1,31 +1,38 @@
 'use strict';
 
-const _ = require('lodash');
+const {
+  flatten,
+  flow,
+  isNumber,
+  head,
+  last,
+  map,
+  reduce,
+  tap
+} = require('lodash/fp');
+const reduceNoCap = reduce.convert({ 'cap': false });
+const mapNoCap = map.convert({ 'cap': false });
+
 const fetch = require('node-fetch');
 
-const apiParams = require('../parameters').ZKILLBOARD_PARAMS;
+const {ZKILLBOARD_PARAMS} = require('../parameters');
 const fetchZKillboard = require('../io/fetchZKillboard');
 
 // functions to analyse losses
-
-const filterDust = (loss) => {
-  return (-1 === [351210, 351064].indexOf(loss.groupID));
-};
-
 const reduceLoss = (memo, loss) => {
   //add items
-  memo =  _(loss.items).reduce(reduceLostItem,memo);
+  memo =  reduce(reduceLostItem,memo,loss.items);
   addShip(memo, loss);
   return memo;
 };
 
 const addShip = (memo, loss) => {
-  memo[loss.victim.shipTypeID] = (_.isNumber(memo[loss.victim.shipTypeID])? memo[loss.victim.shipTypeID] : 0) + 1;
+  memo[loss.victim.shipTypeID] = (isNumber(memo[loss.victim.shipTypeID])? memo[loss.victim.shipTypeID] : 0) + 1;
   return memo;
 };
 
 const reduceLostItem = (memo, value) => {
-  memo[value.typeID] = (_.isNumber(memo[value.typeID])? memo[value.typeID] : 0) + value.qtyDropped + value.qtyDestroyed;
+  memo[value.typeID] = (isNumber(memo[value.typeID])? memo[value.typeID] : 0) + value.qtyDropped + value.qtyDestroyed;
   return memo;
 };
 
@@ -33,15 +40,12 @@ const convertToObject = (value, key) => {
   return { typeID: key, quantity: value};
 };
 
-const computeLossesForIndustry = (losses) => {
-  console.log('computeLossesForIndustry', losses.length);
-  return _.map(_.reduce(losses, reduceLoss, {}), convertToObject);
-};
+const computeLossesForIndustry = flow(reduce(reduceLoss, {}),mapNoCap(convertToObject));
 
 // function to get losses
 
 const fetchLossesForOneEntity = (entity) => {
-  const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url) +
+  const baseUrl = reduceNoCap(reduceURLoptions,ZKILLBOARD_PARAMS.url, ZKILLBOARD_PARAMS.options) +
     '/' + entity.type + '/' + entity.id;
   let oldestKill;
   let aggregateResult = [];
@@ -55,7 +59,7 @@ const fetchLossesForOneEntity = (entity) => {
     if (partialResult.length > 0) {
       //
       aggregateResult = aggregateResult.concat(partialResult);
-      return fetchZKillboard(baseUrl+ '/beforeKillID/' + _.last(partialResult).killID)
+      return fetchZKillboard(baseUrl+ '/beforeKillID/' + last(partialResult).killID)
         .then(fetchNext);
     }
 
@@ -68,27 +72,33 @@ const fetchLossesForOneEntity = (entity) => {
   return fetchNext();
 };
 
-const fetchLosses = () => {
-  const baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
-
+const fetchLosses = ({filters}) => {
   const extractEntity = (value, filterKey) => {
-    return _.map(value, (filterValue) => {
+    return map((filterValue) => {
       return {type:filterKey, id: filterValue};
-    });
+    }, value)
   };
 
-  return fetchLossesForOneEntity(_(apiParams.filters).map(extractEntity).flatten().head());
-};
+    flow(
+      mapNoCap(extractEntity),
+      flatten,
+      head
+    )(filters)
 
-const logger = (log) => {console.log(log); return log;}
-const errorlog = (log) => {console.error("error"); return Promise.reject(log);}
+  return flow(
+    mapNoCap(extractEntity),
+    flatten,
+    head,
+    fetchLossesForOneEntity
+    )(filters);
+};
 
 const reduceURLoptions = (memo, value, key) => {
   return memo + '/' + key + '/' + value;
 };
 
 module.exports =  (() =>{
-  return Promise.resolve()
+  return Promise.resolve(ZKILLBOARD_PARAMS)
   .then(fetchLosses)
   .then(computeLossesForIndustry);
 });
