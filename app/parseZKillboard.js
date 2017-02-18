@@ -45,21 +45,21 @@ const computeLossesForIndustry = flow(reduce(reduceLoss, {}),mapNoCap(convertToO
 // function to get losses
 
 const fetchLossesForOneEntity = (entity) => {
-  const baseUrl = reduceNoCap(reduceURLoptions,ZKILLBOARD_PARAMS.url, ZKILLBOARD_PARAMS.options) +
-    '/' + entity.type + '/' + entity.id;
+  const baseUrl = reduceNoCap(reduceURLoptions, ZKILLBOARD_PARAMS.url +
+    '/' + entity.type + '/' + entity.id, ZKILLBOARD_PARAMS.options);
   let oldestKill;
   let aggregateResult = [];
 
   const fetchNext = (partialResult) => {
     if (partialResult === undefined) {
-      return fetchZKillboard(baseUrl)
+      return fetchZKillboard(baseUrl + '/')
         .then(fetchNext);
     }
 
     if (partialResult.length > 0) {
       //
       aggregateResult = aggregateResult.concat(partialResult);
-      return fetchZKillboard(baseUrl+ '/beforeKillID/' + last(partialResult).killID)
+      return fetchZKillboard(baseUrl + '/beforeKillID/' + last(partialResult).killID + '/')
         .then(fetchNext);
     }
 

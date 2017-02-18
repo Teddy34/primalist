@@ -1,8 +1,8 @@
 const pg = require('pg');
-const _ = require('lodash');
+const  {once} = require('lodash');
 let clientConnected = null;
 
-const connect = _.once((connectionString) => {
+const connect = once((connectionString) => {
   return clientConnected = new Promise((resolve, reject) => {
       pg.connect(connectionString, (err, client, done) => {
       if(err) {

@@ -1,5 +1,4 @@
 const dbConnector = require('./dbConnector');
-const _ = require('lodash');
 
 const connect = (connectionString) => {
   return dbConnector.connect(connectionString);

@@ -10,8 +10,8 @@ module.exports = {
     },
     filters: {
       /* filters are done one by one, not combined */
-      //corporation: (process.env.CORPORATIONS || "98161032").split(','),
-      alliance: (process.env.ALLIANCES || "99003214").split(','),
+      corporationID: (process.env.CORPORATIONS || "98410772").split(','),
+      //alliance: (process.env.ALLIANCES || "99003214").split(','),
     }
   }
 };
