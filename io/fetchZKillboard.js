@@ -1,12 +1,44 @@
-var _ = require('lodash');
-var fetch = require('node-fetch');
+const _ = require('lodash');
+const fetch = require('node-fetch');
 
-var parameters = require('../parameters');
+const parameters = require('../parameters');
+
+const getJSON = (response) => {
+  return response.json();
+}
+
+const log = (result) => {
+	console.log(result);
+	return result;
+}
+
+const promisedThrottle = (func, duration) => {
+  // pool management
+  const pool = [];
+
+  const removeFromPool = () => {
+    if (pool.length) {
+      pool.shift()();
+    }
+  };
+
+  const addToPool = (input) => {
+    const promise = new Promise((resolve, reject) => {
+        pool.push(() => resolve(input));
+    });
+    //return the result of the call;
+    return promise.then(func);
+  };
+
+  setInterval(removeFromPool, duration);
+  return addToPool;
+}
 
 // function to get losses
 
-module.exports = function get(urls) {
-  var options = {
+module.exports = promisedThrottle((url) => {
+  console.log("fetching data from zkillboard", url);
+  const options = {
     method: 'get',
     headers:{
         'Accept': 'application/json',
@@ -16,25 +48,5 @@ module.exports = function get(urls) {
       }
   };
 
-  var doFetch = function(url, options) {
-    return fetch(url, options).then(getJSON);
-  };
-
-  return Promise.all(_.map(urls, doFetch))
-  .then(concatArrays)
-};
-
-function getJSON(response) {
-  return response.json();
-}
-
-function concatArrays(results) {
-  return _.reduce(results, function(memo, result) {
-    return memo.concat(result);
-  }, []);
-}
-
-function log(result) {
-	console.log(result);
-	return result;
-}
+  return fetch(url, options).then(getJSON);
+}, 300);

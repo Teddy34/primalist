@@ -1,40 +1,54 @@
-var express = require('express');
-var _ = require('lodash');
+const express = require('express');
+const {throttle} = require('lodash');
 
-var parameters = require('../parameters');
-var application = require('../app/application');
+const {THROTTLE_DURATION} = require('../parameters');
+const {serveAPI, serveHTML} = require('../app/application');
 
-var webServer;
+let webServer;
 
+const promisedServeAPI = throttle(serveAPI, THROTTLE_DURATION);
+const promisedServeHTML = throttle(serveHTML, THROTTLE_DURATION);
 
-var initServer = function(input) {
+const initServer = (input) => {
   // create the webserver
   webServer = express();
 
-  webServer.use('/api/', function(req,res) {
+  webServer.get('/api/', (req,res) => {
     Promise.resolve()
-    .then(_.throttle(application.serveAPI,parameters.THROTTLE_DURATION))
-    .then(function(response) {
+    .then(promisedServeAPI)
+    .then((response) => {
+      console.log('success');
       res.send(response);
     })
-    .catch(function(error) {
-      res.send({error:(error && error.stack) ?error.stack : error});
+    .catch((error) => {
+      console.log('error:', error);
+      res.send({error:(error && error.stack) ?error.stack : 'error' + error});
     });
   });
-  webServer.use('/', function(req,res) {
+  webServer.get('/', (req,res) => {
     Promise.resolve()
-    .then(_.throttle(application.serveHTML,parameters.THROTTLE_DURATION))
-    .then(function(response) {
+    .then(promisedServeHTML)
+    .then((response) => {
       res.send(response);
     })
-    .catch(function(error) {
+    .catch((error) => {
       res.send({error:(error && error.stack) ?error.stack : error});
     });
   });
   return input;
 };
 
-var startServer = function(port) {
+const logger = (result) => {
+  console.log(result);
+  return result;
+}
+
+const logError = (error) => {
+  console.error("error server:", error);
+  return promise.reject(error);
+}
+
+const startServer = (port) => {
   console.log("Listening to port", port);
   webServer.listen(port);
 };
@@ -42,19 +56,9 @@ var startServer = function(port) {
 // START THE SERVER
 // =============================================================================
 module.exports = {
-  start: function(port) {
+  start: (port) => {
     return Promise.resolve(port)
       .then(initServer)
       .then(startServer);
   }
 } 
-
-function logger(result) {
-  console.log(result);
-  return result;
-}
-
-function logError(error) {
-  console.error("error server:", error);
-  return promise.reject(error);
-}

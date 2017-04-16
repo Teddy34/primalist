@@ -1,63 +1,104 @@
-var _ = require('lodash');
-var fetch = require('node-fetch');
+'use strict';
 
-var apiParams = require('../parameters').ZKILLBOARD_PARAMS;
-var fetchZKillboard = require('../io/fetchZKillboard');
+const {
+  flatten,
+  flow,
+  isNumber,
+  head,
+  last,
+  map,
+  reduce,
+  tap
+} = require('lodash/fp');
+const reduceNoCap = reduce.convert({ 'cap': false });
+const mapNoCap = map.convert({ 'cap': false });
+
+const fetch = require('node-fetch');
+
+const {ZKILLBOARD_PARAMS} = require('../parameters');
+const fetchZKillboard = require('../io/fetchZKillboard');
 
 // functions to analyse losses
-
-var filterDust = function(loss) {
-  return (-1 === [351210, 351064].indexOf(loss.groupID));
-};
-
-var reduceLoss = function(memo, loss) {
+const reduceLoss = (memo, loss) => {
   //add items
-  memo =  _(loss.items).reduce(reduceLostItem,memo);
+  memo =  reduce(reduceLostItem,memo,loss.items);
   addShip(memo, loss);
   return memo;
 };
 
-var addShip = function(memo, loss) {
-  memo[loss.victim.shipTypeID] = (_.isNumber(memo[loss.victim.shipTypeID])? memo[loss.victim.shipTypeID] : 0) + 1;
+const addShip = (memo, loss) => {
+  memo[loss.victim.shipTypeID] = (isNumber(memo[loss.victim.shipTypeID])? memo[loss.victim.shipTypeID] : 0) + 1;
   return memo;
 };
 
-var reduceLostItem = function (memo, value) {
-  memo[value.typeID] = (_.isNumber(memo[value.typeID])? memo[value.typeID] : 0) + value.qtyDropped + value.qtyDestroyed;
+const reduceLostItem = (memo, value) => {
+  memo[value.typeID] = (isNumber(memo[value.typeID])? memo[value.typeID] : 0) + value.qtyDropped + value.qtyDestroyed;
   return memo;
 };
 
-var convertToObject = function(value, key) {
+const convertToObject = (value, key) => {
   return { typeID: key, quantity: value};
 };
 
-var computeLossesForIndustry = function(losses) {
-  return _.map(_.reduce(losses, reduceLoss, {}), convertToObject);
-};
+const computeLossesForIndustry = flow(reduce(reduceLoss, {}),mapNoCap(convertToObject));
 
 // function to get losses
 
-var fetchLosses = function() {
-  var baseUrl = _.reduce(apiParams.options, reduceURLoptions,apiParams.url);
+const fetchLossesForOneEntity = (entity) => {
+  const baseUrl = reduceNoCap(reduceURLoptions, ZKILLBOARD_PARAMS.url +
+    '/' + entity.type + '/' + entity.id, ZKILLBOARD_PARAMS.options);
+  let oldestKill;
+  let aggregateResult = [];
 
-  var addFilter = function(value, filterKey) {
-    return _.map(value, function(filterValue) {
-      return baseUrl + '/' + filterKey + '/' + filterValue;
-    });
+  const fetchNext = (partialResult) => {
+    if (partialResult === undefined) {
+      return fetchZKillboard(baseUrl + '/')
+        .then(fetchNext);
+    }
+
+    if (partialResult.length > 0) {
+      //
+      aggregateResult = aggregateResult.concat(partialResult);
+      return fetchZKillboard(baseUrl + '/beforeKillID/' + last(partialResult).killID + '/')
+        .then(fetchNext);
+    }
+
+  console.log("result final", aggregateResult.length); 
+    // no more things to request, end of loop
+    return aggregateResult;
+
   };
 
-  return fetchZKillboard(_(apiParams.filters).map(addFilter).flatten().value());
+  return fetchNext();
 };
 
-module.exports =  (function() {
-  return Promise.resolve()
+const fetchLosses = ({filters}) => {
+  const extractEntity = (value, filterKey) => {
+    return map((filterValue) => {
+      return {type:filterKey, id: filterValue};
+    }, value)
+  };
+
+    flow(
+      mapNoCap(extractEntity),
+      flatten,
+      head
+    )(filters)
+
+  return flow(
+    mapNoCap(extractEntity),
+    flatten,
+    head,
+    fetchLossesForOneEntity
+    )(filters);
+};
+
+const reduceURLoptions = (memo, value, key) => {
+  return memo + '/' + key + '/' + value;
+};
+
+module.exports =  (() =>{
+  return Promise.resolve(ZKILLBOARD_PARAMS)
   .then(fetchLosses)
   .then(computeLossesForIndustry);
 });
-
-function logger(log) {console.log(log); return log;}
-function errorlog(log) {consor.error("error"); return Promise.reject(log);}
-
-var reduceURLoptions = function(memo, value, key) {
-  return memo + '/' + key + '/' + value;
-};

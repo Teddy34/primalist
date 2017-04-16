@@ -1,67 +1,71 @@
-var _ = require('lodash');
+const {
+  flow,
+  map,
+  difference,
+  filter,
+  zip,
+  toNumber,
+  property,
+  tap
+} = require('lodash/fp');
 
-var template = require('./UITable');
-var parseZKillboard = require('./parseZKillboard');
-var eveSDE = require('../io/eveSDE');
+const log = (text) => tap(() => console.log(text));
 
-var mergeToOneObject = function(list) {
- return _.reduce(list, function(memo,value) {return _.extend(memo,value);});
-};
+const template = require('./UITable');
+const parseZKillboard = require('./parseZKillboard');
+const {getItems} = require('../io/eveSDE');
 
-var forceTypeNumber = function(elem) {
-  elem.groupID = Number(elem.groupID);
-  elem.typeID = Number(elem.typeID);
-  return elem;
-};
+const mergeToOneObject = (arr) => Object.assign({}, ...arr);
 
-var filterEveOnlyAndMarket = function(elem) {
-  //return (elem.groupID < 100000);
-  return ((elem.groupID < 100000) && (elem.marketGroupID !== null));
-};
+const forceTypeNumber = (elem) => Object.assign(
+  {},
+  elem,
+  {
+    groupID: toNumber(elem.groupID),
+    typeID: toNumber(elem.typeID)
+  }
+);
 
-var decorateFromSDE = function(itemList) {
+const mergeAndFormat = flow(mergeToOneObject, forceTypeNumber);
 
-  function parse(eveSDEItems) {
-    var myItemIDs = _.pluck(itemList, 'typeID');
-    var sdeItemIDs = _.pluck(eveSDEItems.rows, 'typeID');
-    var difference = _.difference(myItemIDs,sdeItemIDs); // list not found items
-    var myFilteredItemList = _.filter(itemList, function(item) {
-      return (difference.indexOf(item.typeID) === -1);
-    });
+const filterIsOnMarket = elem => (elem.marketGroupID !== null)
+const getItemIds = map(flow(property('typeID'), (nId) => String(nId)));
 
-    return _(eveSDEItems.rows).zip(myFilteredItemList).map(mergeToOneObject).map(forceTypeNumber).filter(filterEveOnlyAndMarket).sortBy('groupID').value();
+const decorateFromSDE = (itemList) => {
+  const parse = (eveSDEItems) => {
+    const myItemIDs = getItemIds(itemList);
+    const sdeItemIDs = getItemIds(eveSDEItems);
+
+    const diff = difference(myItemIDs, sdeItemIDs); // list not found items
+    const myFilteredItemList = filter(item => (diff.indexOf(item.typeID) === -1), itemList);
+
+    return flow(
+      zip(myFilteredItemList),
+      map(mergeAndFormat),
+      filter(filterIsOnMarket)
+      )(eveSDEItems);
   }
 
-  return eveSDE.getItems(itemList)
-  .then(parse);
+  return Promise.resolve(itemList)
+  .then(log('getting items'))
+    .then(getItems)
+    .then(log('item got'))
+    .then(property('rows'))
+    .then(parse)
+    .then(log('parsed'));
 };
 
-var getRenderedTemplate = function(data) {
-  return template({items:data});
-};
+const getRenderedTemplate = data => template({items:data})
 
 module.exports = {
-	serveHTML : function() {
-    return Promise.resolve()
+	serveHTML : () => Promise.resolve()
+    .then(parseZKillboard)
+    .then(tap(result => console.log(result.length)))
+    .then(decorateFromSDE)
+    .then(getRenderedTemplate)
+  ,
+
+  serveAPI: () => Promise.resolve()
     .then(parseZKillboard)
     .then(decorateFromSDE)
-    .then(getRenderedTemplate);
-	},
-
-  serveAPI: function() {
-
-    return Promise.resolve()
-    .then(parseZKillboard)
-    .then(decorateFromSDE);
-  }
 };
-
-function logger(result) {
-  console.log(result);
-  return result;
-}
-
-function logError(error) {
-  console.error("error app:", error);
-  return promise.reject(error);
-}

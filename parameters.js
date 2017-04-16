@@ -5,11 +5,13 @@ module.exports = {
   DB_CONNECTION_STRING: process.env.DB_CONNECTION_STRING || require('./databaseCredentials'),
   ZKILLBOARD_PARAMS: {  url: "https://zkillboard.com/api/losses/no-attackers",
     options: {
-      pastSeconds: 604800
+      pastSeconds: 604800,
+      iskValue: 15000
     },
     filters: {
       /* filters are done one by one, not combined */
-      corporation: (process.env.CORPORATIONS || "98161032").split(',')
+      corporationID: (process.env.CORPORATIONS || "98410772").split(','),
+      //alliance: (process.env.ALLIANCES || "99003214").split(','),
     }
   }
 };
