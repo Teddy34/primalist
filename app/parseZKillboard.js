@@ -8,7 +8,8 @@ const {
   last,
   map,
   reduce,
-  tap
+  tap,
+  uniqBy
 } = require('lodash/fp');
 const reduceNoCap = reduce.convert({ 'cap': false });
 const mapNoCap = map.convert({ 'cap': false });
@@ -17,22 +18,23 @@ const fetch = require('node-fetch');
 
 const {ZKILLBOARD_PARAMS} = require('../parameters');
 const fetchZKillboard = require('../io/fetchZKillboard');
+const uniqByKillID = uniqBy('killmail_id');
 
 // functions to analyse losses
 const reduceLoss = (memo, loss) => {
   //add items
-  memo =  reduce(reduceLostItem,memo,loss.items);
+  memo =  reduce(reduceLostItem,memo,loss.victim.items);
   addShip(memo, loss);
   return memo;
 };
 
 const addShip = (memo, loss) => {
-  memo[loss.victim.shipTypeID] = (isNumber(memo[loss.victim.shipTypeID])? memo[loss.victim.shipTypeID] : 0) + 1;
+  memo[loss.victim.ship_type_id] = (isNumber(memo[loss.victim.ship_type_id])? memo[loss.victim.ship_type_id] : 0) + 1;
   return memo;
 };
 
 const reduceLostItem = (memo, value) => {
-  memo[value.typeID] = (isNumber(memo[value.typeID])? memo[value.typeID] : 0) + value.qtyDropped + value.qtyDestroyed;
+  memo[value.item_type_id] = (isNumber(memo[value.item_type_id])? memo[value.item_type_id] : 0) + (value.quantity_dropped || 0) + (value.quantity_destroyed || 0);
   return memo;
 };
 
@@ -46,26 +48,25 @@ const computeLossesForIndustry = flow(reduce(reduceLoss, {}),mapNoCap(convertToO
 
 const fetchLossesForOneEntity = (entity) => {
   const baseUrl = reduceNoCap(reduceURLoptions, ZKILLBOARD_PARAMS.url +
-    '/' + entity.type + '/' + entity.id, ZKILLBOARD_PARAMS.options);
+    '/' + entity.type + '/' + entity.id + '/', ZKILLBOARD_PARAMS.options);
   let oldestKill;
   let aggregateResult = [];
+  let pageNum = 2;
 
   const fetchNext = (partialResult) => {
     if (partialResult === undefined) {
-      return fetchZKillboard(baseUrl + '/')
+      return fetchZKillboard(baseUrl)
         .then(fetchNext);
     }
-
     if (partialResult.length > 0) {
       //
       aggregateResult = aggregateResult.concat(partialResult);
-      return fetchZKillboard(baseUrl + '/beforeKillID/' + last(partialResult).killID + '/')
+      return fetchZKillboard(baseUrl + 'page/' + (pageNum++) + '/')
         .then(fetchNext);
     }
-
-  console.log("result final", aggregateResult.length); 
+    return uniqByKillID(aggregateResult);
     // no more things to request, end of loop
-    return aggregateResult;
+    //return aggregateResult;
 
   };
 
@@ -94,11 +95,12 @@ const fetchLosses = ({filters}) => {
 };
 
 const reduceURLoptions = (memo, value, key) => {
-  return memo + '/' + key + '/' + value;
+  return memo + key + '/' + value + '/';
 };
 
 module.exports =  (() =>{
   return Promise.resolve(ZKILLBOARD_PARAMS)
   .then(fetchLosses)
+  .then(tap(list => console.log('fetchedLosses', list)))
   .then(computeLossesForIndustry);
 });

@@ -1,13 +1,15 @@
-const dbConnector = require('./dbConnector');
+const dbConnector = require('./mysqlConnector');
 
 const connect = (connectionString) => {
   return dbConnector.connect(connectionString);
 };
 
 const getItems = (itemList) => {
-  return dbConnector.sendQueryWhenReady(`SELECT t."typeID", t."typeName", t."groupID", t."volume", t."marketGroupID" FROM "invTypes" AS "t" WHERE "typeID" IN (
-                  ${itemList.map((elem) => elem.typeID).toString()}) ORDER BY "typeID"`);
+	  return dbConnector.sendQueryWhenReady(`SELECT typeID, typeName, groupID, volume, marketGroupID FROM invTypes WHERE typeID IN (
+                  ${itemList.map((elem) => elem.typeID).toString()}) ORDER BY typeID`);
 };
+
+const getShips = () => {}
 
 module.exports = {
   connect: connect,

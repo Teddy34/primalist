@@ -6,12 +6,12 @@ module.exports = {
   ZKILLBOARD_PARAMS: {  url: "https://zkillboard.com/api/losses/no-attackers",
     options: {
       pastSeconds: 604800,
-      iskValue: 15000
+      //iskValue: 15000
     },
     filters: {
       /* filters are done one by one, not combined */
-      corporationID: (process.env.CORPORATIONS || "98410772").split(','),
-      //alliance: (process.env.ALLIANCES || "99003214").split(','),
+      //corporationID: (process.env.CORPORATIONS || "98410772").split(','),
+      alliance: (process.env.ALLIANCES || "99005338").split(','),
     }
   }
 };

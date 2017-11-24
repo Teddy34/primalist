@@ -1,7 +1,7 @@
 var mysql = require('mysql');
 var _ = require('lodash');
 
-var clientConnected = Promise.reject('not connected');
+var clientConnected;
 
 var connect = _.once(function(connectionString) {
 
@@ -13,7 +13,7 @@ var connect = _.once(function(connectionString) {
 	  database: 'evesde'
 	});
 
-  return new Promise(function(resolve, reject) {
+  return clientConnected = new Promise(function(resolve, reject) {
       connection.connect(function(err) {
 	      if(err) {
 	        console.error('Error unable to connect to database:', err)
@@ -27,11 +27,10 @@ var connect = _.once(function(connectionString) {
   });
 });
 
-var disconnect = clientConnected.then(connection => connection.end());
+var disconnect = () => clientConnected.then(connection => connection.end());
 
 
 var sendQueryWhenReady = function(query) {
-	console.log('querying', query);
   if (!clientConnected) {
     return Promise.reject('Maybe you want to connect to the database first');
   }
@@ -39,9 +38,8 @@ var sendQueryWhenReady = function(query) {
   function sendQuery(client){
     return new Promise(function(resolve, reject) {
 
-		connection.query(query, function (error, results, fields) {
+		client.query(query, function (error, results, fields) {
 		  if (error) return reject(error);
-		  console.log('result ok');
 		  resolve(results);
 		});
     });

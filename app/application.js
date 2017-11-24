@@ -39,6 +39,8 @@ const decorateFromSDE = (itemList) => {
     const diff = difference(myItemIDs, sdeItemIDs); // list not found items
     const myFilteredItemList = filter(item => (diff.indexOf(item.typeID) === -1), itemList);
 
+    console.log('difference', diff.length, myFilteredItemList.length);
+
     return flow(
       zip(myFilteredItemList),
       map(mergeAndFormat),
@@ -50,7 +52,7 @@ const decorateFromSDE = (itemList) => {
   .then(log('getting items'))
     .then(getItems)
     .then(log('item got'))
-    .then(property('rows'))
+    //.then(property('rows'))
     .then(parse)
     .then(log('parsed'));
 };
@@ -60,7 +62,6 @@ const getRenderedTemplate = data => template({items:data})
 module.exports = {
 	serveHTML : () => Promise.resolve()
     .then(parseZKillboard)
-    .then(tap(result => console.log(result.length)))
     .then(decorateFromSDE)
     .then(getRenderedTemplate)
   ,
